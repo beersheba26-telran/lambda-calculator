@@ -1,7 +1,7 @@
 import re
 
 from lambda_request import calculate_request
-
+from logging_config import logger
 
 def _finish():
     print("\nExiting the calculator. Goodbye!")
@@ -18,6 +18,7 @@ def main():
                 _finish()
                 break
             data = re.split(r'[ ,#]+', user_input.strip())
+            logger.debug(f"User input: {user_input}, parsed data: {data}")
             calculate_request(data)
         except KeyboardInterrupt:
             _finish()
