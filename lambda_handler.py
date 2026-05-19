@@ -1,5 +1,7 @@
 import json
 from operator import add, sub, mul, truediv
+from calc_data import get_calc_data
+from logging_config import logger
 _operations = {
     '+': add,
     '-': sub,
@@ -11,21 +13,7 @@ def _get_response(code, body):
         'statusCode': code,
         'body': json.dumps(body)
     }
-def _validate_body(body):
-    errorMessage=""
-    if any(field not in body for field in ['op1', 'op2', 'operation']):
-        if 'op1' not in body:
-            errorMessage += "field op1 is missing. "
-        if 'op2' not in body:
-            errorMessage += "field op2 is missing. "
-        if 'operation' not in body:
-            errorMessage += "field operation is missing. "
-    else:
-        if not isinstance(body['op1'], (int, float)):
-            errorMessage += "op1 not a number. "
-        if not isinstance(body['op2'], (int, float)):
-            errorMessage += "op2 not a number. "
-    return errorMessage
+
 def lambda_handler(event, context):
     """
     handling calculating from JSON with following structure:
@@ -35,24 +23,19 @@ def lambda_handler(event, context):
         event (_type_): event from HTTP API Gateway
         context (_type_): context from AWS Lambda
     """
+    logger.debug("Received event: %s", event)
     body = event.get('body', None)
     response = _get_response(400, 'missing body')
     if  body:
         try:
-            bodyObj = json.loads(body)
-            errorMessage = _validate_body(bodyObj)
-            if errorMessage:
-                response = _get_response(400, errorMessage)
-            else:
-                op1 = bodyObj['op1']
-                op2 = bodyObj['op2']
-                operation = bodyObj['operation']
-                result = _operations[operation](op1, op2)
-                response = _get_response(200, result)
-        except json.JSONDecodeError:
-            response = _get_response(400, 'invalid JSON')
+            data = get_calc_data(body)
+            logger.debug(f"Parsed data: {data}")
+            result = _operations[data.operation](data.op1, data.op2)
+            response = _get_response(200, result)
+        except ValueError as e:
+            response = _get_response(400, str(e))
         except KeyError:
-            response = _get_response(404, f"operation {operation} not found")
+            response = _get_response(404, f"operation {data.operation} not found")
         except ZeroDivisionError:
             response = _get_response(400, 'division by zero')
     return response

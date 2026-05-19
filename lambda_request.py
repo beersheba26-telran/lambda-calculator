@@ -26,8 +26,8 @@ def calculate_request(data:list[str]):
 
 def _get_payload(data):
     payload = json.dumps({
-        "op1": float(data[0]),
-        "op2": float(data[1]),
+        "op1": data[0],
+        "op2": data[1],
         "operation": data[2]
     })
     
